@@ -1,0 +1,79 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["referentialIntegrity"]
+}
+
+datasource db {
+  provider             = "mysql"
+  url                  = env("DATABASE_URL")
+  shadowDatabaseUrl    = env("SHADOW_DATABASE_URL")
+  referentialIntegrity = "prisma"
+}
+
+model User {
+  id             Int        @id @default(autoincrement())
+  username       String     @unique
+  email          String     @unique
+  hashedPassword String
+  pfp            String?    @default("https://data.whicdn.com/images/347944978/original.jpg")
+  bio            String?    @default("There's nothing here yet 😐")
+  role           Role       @default(USER)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  userPosts      Post[]
+  comments       Comment[]
+  favorites      Favorite[]
+}
+
+model Post {
+  id        Int        @id @default(autoincrement())
+  title     String
+  imageUrl  String
+  views     Int
+  User      User?      @relation(fields: [userId], references: [id])
+  userId    Int?
+  topics    Topic[]
+  favorited Favorite[]
+  comments  Comment[]
+
+  @@index([userId])
+}
+
+model Favorite {
+  id     Int   @id @default(autoincrement())
+  User   User? @relation(fields: [userId], references: [id])
+  userId Int?
+  Post   Post? @relation(fields: [postId], references: [id])
+  postId Int?
+
+  @@index([userId, postId])
+}
+
+model Comment {
+  id          Int    @id @default(autoincrement())
+  title       String
+  commentText String
+  User        User?  @relation(fields: [userId], references: [id])
+  userId      Int?
+  Post        Post?  @relation(fields: [postId], references: [id])
+  postId      Int?
+
+  @@index([userId, postId])
+}
+
+model Topic {
+  id        Int    @id @default(autoincrement())
+  Post      Post?  @relation(fields: [postId], references: [id])
+  postId    Int?
+  topicName String
+
+  @@index([postId])
+}
+
+enum Role {
+  USER
+  ADMIN
+}
